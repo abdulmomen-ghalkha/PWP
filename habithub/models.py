@@ -33,7 +33,6 @@ class Habit(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE")) 
     name = db.Column(db.String(64), nullable=False) 
     active = db.Column(db.Boolean, nullable=False) 
-    email = db.Column(db.String(128), nullable=False, unique=True) 
     creation_date = db.Column(db.DateTime, nullable=False)
     
     # Relationship back to User 
