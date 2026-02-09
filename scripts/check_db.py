@@ -1,4 +1,10 @@
-from habithub.models import app, db, User, Habit, Reminder, Tracking
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from habithub import db, create_app
+from habithub.models import User, Habit, Reminder, Tracking
+
+app = create_app()
 
 def check():
     with app.app_context():

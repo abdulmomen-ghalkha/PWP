@@ -1,5 +1,11 @@
+import sys, os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from datetime import datetime, time, timedelta, UTC
-from habithub.models import app, db, User, Habit, Reminder, Tracking
+from habithub import create_app, db
+from habithub.models import User, Habit, Reminder, Tracking
+
+app = create_app()
 
 def seed():
     with app.app_context():

@@ -1,21 +1,5 @@
-from flask_sqlalchemy import SQLAlchemy
-from flask import Flask
-from sqlalchemy.engine import Engine
-from sqlalchemy import event
-import os
-# To be moved to the 9
-app = Flask(__name__)
-os.makedirs(app.instance_path, exist_ok=True)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(app.instance_path, "test.db")
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db = SQLAlchemy(app)
-
-@event.listens_for(Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.close()
-
+from habithub import db
+from datetime import datetime
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -25,9 +9,6 @@ class User(db.Model):
     # Relationship to Habit 
     habits = db.relationship("Habit", back_populates="user")
     
-
-
-
 
 class Habit(db.Model): 
     id = db.Column(db.Integer, primary_key=True) 
@@ -46,7 +27,6 @@ class Habit(db.Model):
     tracking_logs = db.relationship("Tracking", back_populates="habit")
 
 
-
 class Reminder(db.Model): 
     id = db.Column(db.Integer, primary_key=True) 
     habit_id = db.Column(db.Integer, db.ForeignKey("habit.id", ondelete="CASCADE"))
@@ -63,13 +43,3 @@ class Tracking(db.Model):
     log_time = db.Column(db.DateTime, nullable=False) 
     # Relationship back to Habit 
     habit = db.relationship("Habit", back_populates="tracking_logs")
-
-
-ctx = app.app_context()
-ctx.push()
-db.create_all()
-ctx.pop()
-
-
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5000, debug=True)
