@@ -2,10 +2,11 @@ from flask_sqlalchemy import SQLAlchemy
 from flask import Flask
 from sqlalchemy.engine import Engine
 from sqlalchemy import event
-
+import os
 # To be moved to the 9
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///test.db"
+os.makedirs(app.instance_path, exist_ok=True)
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(app.instance_path, "test.db")
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
