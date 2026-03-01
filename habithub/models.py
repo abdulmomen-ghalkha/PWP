@@ -18,6 +18,29 @@ class User(db.Model):
     # Relationship to Habit
     habits = db.relationship("Habit", back_populates="user")
 
+    @staticmethod
+    def json_schema():
+        return _load_schema("user.json")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "first_name": self.first_name,
+            "last_name": self.last_name,
+            "email": self.email,
+            "_links": {
+                "self": {"href": f"/users/{self.id}"},
+                "habits": {"href": f"/users/{self.id}/habits"}
+            }
+        }
+
+    def deserialize(self, data):
+        # simple mapping
+        self.first_name = data["first_name"]
+        self.last_name = data["last_name"]
+        self.email = data["email"]
+        return self
+
 class Habit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"),nullable=False)
@@ -33,6 +56,31 @@ class Habit(db.Model):
 
     # Relationship to Tracking
     tracking_logs = db.relationship("Tracking", back_populates="habit")
+    @staticmethod
+    def json_schema():
+        return _load_schema("habit.json")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "name": self.name,
+            "active": self.active,
+            "creation_date": self.creation_date.isoformat(),
+            "_links": {
+                "self": {"href": f"/habits/{self.id}"},
+                "user": {"href": f"/users/{self.user_id}"},
+                "reminders": {"href": f"/habits/{self.id}/reminders"},
+                "tracking": {"href": f"/habits/{self.id}/tracking"}
+            }
+        }
+
+    def deserialize(self, data):
+        self.name = data["name"]
+        # allow optional "active"
+        if "active" in data:
+            self.active = data["active"]
+        return self
 
 class Reminder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
