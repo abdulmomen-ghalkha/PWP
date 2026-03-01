@@ -1,0 +1,11 @@
+{
+  "type": "object",
+  "properties": {
+    "log_time": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": ["log_time"],
+  "additionalProperties": false
+}
