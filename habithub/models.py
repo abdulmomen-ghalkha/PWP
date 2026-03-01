@@ -1,7 +1,15 @@
 import click
 from flask.cli import with_appcontext
 from habithub import db
-
+import json
+import os
+from datetime import datetime, time as dtime, UTC
+def _load_schema(filename: str) -> dict:
+    """Load JSON schema from habithub/static/schema/."""
+    base_dir = os.path.dirname(__file__)  # habithub/
+    schema_path = os.path.join(base_dir, "static", "schema", filename)
+    with open(schema_path, "r", encoding="utf-8") as f:
+        return json.load(f)
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(64), nullable=False)
@@ -12,50 +20,82 @@ class User(db.Model):
 
 class Habit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"),nullable=False)
     name = db.Column(db.String(64), nullable=False)
-    active = db.Column(db.Boolean, nullable=False)
-    creation_date = db.Column(db.DateTime, nullable=False)
+    active = db.Column(db.Boolean, nullable=False, default=True)
+    creation_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
     # Relationship back to User
     user = db.relationship("User", back_populates="habits")
 
     # Relationship to Reminder
-    reminder = db.relationship("Reminder", back_populates="habit")
+    reminders = db.relationship("Reminder", back_populates="habit", cascade="all, delete-orphan")
 
     # Relationship to Tracking
     tracking_logs = db.relationship("Tracking", back_populates="habit")
 
 class Reminder(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    habit_id = db.Column(db.Integer, db.ForeignKey("habit.id", ondelete="CASCADE"))
+    habit_id = db.Column(db.Integer, db.ForeignKey("habit.id", ondelete="CASCADE"), nullable=False)
     reminded_time = db.Column(db.Time, nullable=False)
-    creation_date = db.Column(db.DateTime, nullable=False)
+    creation_date = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(UTC))
 
-    # Relationship back to Habit
-    habit = db.relationship("Habit", back_populates="reminder")
+    habit = db.relationship("Habit", back_populates="reminders")
+
+    @staticmethod
+    def json_schema():
+        return _load_schema("reminder.json")
+
+    def serialize(self):
+        return {
+            "id": self.id,
+            "habit_id": self.habit_id,
+            "reminded_time": self.reminded_time.strftime("%H:%M"),
+            "creation_date": self.creation_date.isoformat(),
+            "_links": {
+                "self": {"href": f"/reminders/{self.id}"},
+                "habit": {"href": f"/habits/{self.habit_id}"},
+                "collection": {"href": f"/habits/{self.habit_id}/reminders"}
+            }
+        }
+
+    def deserialize(self, data):
+        try:
+            hh, mm = data["reminded_time"].split(":")
+            self.reminded_time = dtime(int(hh), int(mm))
+        except Exception as exc:
+            raise ValueError("reminded_time must be in HH:MM format") from exc
+
+        self.creation_date = datetime.now(UTC)
 
 class Tracking(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    habit_id = db.Column(db.Integer, db.ForeignKey("habit.id", ondelete="CASCADE"))
-    log_time = db.Column(db.DateTime, nullable=False)
-    # Relationship back to Habit
+    habit_id = db.Column(db.Integer, db.ForeignKey("habit.id", ondelete="CASCADE"), nullable=False)
+    log_time = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(UTC))
+
     habit = db.relationship("Habit", back_populates="tracking_logs")
 
-@click.command("init-db")
-@with_appcontext
-def init_db_command():
-    db.create_all()
-    print("Database create successfully")
+    @staticmethod
+    def json_schema():
+        return _load_schema("tracking.json")
 
-@click.command("seed")
-@with_appcontext
-def seed_db_command():
-    from scripts.seed_db import seed
-    seed()
+    def serialize(self):
+        return {
+            "id": self.id,
+            "habit_id": self.habit_id,
+            "log_time": self.log_time.isoformat(),
+            "_links": {
+                "self": {"href": f"/tracking/{self.id}"},
+                "habit": {"href": f"/habits/{self.habit_id}"},
+                "collection": {"href": f"/habits/{self.habit_id}/tracking"}
+            }
+        }
 
-@click.command("check")
-@with_appcontext
-def check_db_command():
-    from scripts.check_db import check
-    check()
+    def deserialize(self, data):
+        value = data["log_time"]
+        if value.endswith("Z"):
+            value = value[:-1] + "+00:00"
+        try:
+            self.log_time = datetime.fromisoformat(value)
+        except Exception as exc:
+            raise ValueError("log_time must be ISO date-time (e.g. 2026-03-01T12:30:00Z)") from exc
