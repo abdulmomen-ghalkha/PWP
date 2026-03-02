@@ -6,13 +6,14 @@ from werkzeug.exceptions import BadRequest, Conflict, UnsupportedMediaType
 
 from habithub import db  #, cache
 from habithub.models import User
-
+from habithub.auth import require_api_key
 
 class UserItem(Resource):
     """Resource for managing a single user."""
+    @require_api_key
     def get(self, user):
         return user.serialize()
-
+    @require_api_key
     def put(self, user):
         if not request.json:
             raise UnsupportedMediaType
@@ -29,7 +30,7 @@ class UserItem(Resource):
             raise Conflict(description="Email already exists")
 
         return Response(status=204)
-
+    @require_api_key
     def delete(self, user):
         db.session.delete(user)
         db.session.commit()
@@ -38,10 +39,11 @@ class UserItem(Resource):
     
 class UserCollection(Resource):
     """Resource for managing the collection of users."""
+    @require_api_key
     def get(self):
         response_data = [user.serialize() for user in User.query.all()]
         return response_data
-
+    @require_api_key
     def post(self):
         if not request.json:
             raise UnsupportedMediaType
