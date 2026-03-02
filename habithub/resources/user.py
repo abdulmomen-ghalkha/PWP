@@ -4,15 +4,19 @@ from jsonschema import ValidationError, validate
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import BadRequest, Conflict, UnsupportedMediaType
 
-from habithub import db  #, cache
+from habithub import db, cache
 from habithub.models import User
 from habithub.auth import require_api_key
 
+
 class UserItem(Resource):
     """Resource for managing a single user."""
+
     @require_api_key
+    @cache.cached()
     def get(self, user):
         return user.serialize()
+
     @require_api_key
     def put(self, user):
         if not request.json:
@@ -29,20 +33,33 @@ class UserItem(Resource):
             db.session.rollback()
             raise Conflict(description="Email already exists")
 
+        self._clear_cache()
         return Response(status=204)
+
     @require_api_key
     def delete(self, user):
+        self._clear_cache()
         db.session.delete(user)
         db.session.commit()
         return Response(status=204)
-    
-    
+
+    def _clear_cache(self):
+        """Clear cached data for this user item and the user collection."""
+        cache.delete_many(
+            "view/" + request.path,
+            "view/" + url_for("api.usercollection"),
+        )
+
+
 class UserCollection(Resource):
     """Resource for managing the collection of users."""
+
     @require_api_key
+    @cache.cached()
     def get(self):
         response_data = [user.serialize() for user in User.query.all()]
         return response_data
+
     @require_api_key
     def post(self):
         if not request.json:
@@ -62,5 +79,6 @@ class UserCollection(Resource):
             raise Conflict(description="Email already exists")
 
         location = url_for("api.useritem", user=user)
+        cache.delete("view/" + url_for("api.usercollection"))
         return Response(status=201, headers={"Location": location})
     

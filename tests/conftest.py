@@ -1,7 +1,7 @@
 import os
 import tempfile 
 import pytest
-from habithub import create_app, db as _db
+from habithub import create_app, db as _db, cache as _cache
 from habithub.auth import API_KEY
 
 @pytest.fixture
@@ -10,10 +10,12 @@ def app():
     app = create_app()
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
     app.config["TESTING"] = True
+    app.config["CACHE_TYPE"] = "SimpleCache"
 
     with app.app_context():
         _db.create_all()
         yield app
+        _cache.clear()
         _db.session.remove()
         _db.drop_all()
 

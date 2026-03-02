@@ -1,10 +1,12 @@
 import os
 from flask import Flask
+from flask_caching import Cache
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
 db = SQLAlchemy()
+cache = Cache()
 
 def create_app():
 
@@ -13,7 +15,10 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" \
                                             + os.path.join(app.instance_path, "test.db")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.config["CACHE_TYPE"] = "FileSystemCache"
+    app.config["CACHE_DIR"] = os.path.join(app.instance_path, "cache")
     db.init_app(app)
+    cache.init_app(app)
 
     from . import models
     app.cli.add_command(models.init_db_command)
