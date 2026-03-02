@@ -6,7 +6,7 @@ from werkzeug.exceptions import BadRequest, Conflict, NotFound, UnsupportedMedia
 
 from habithub import db
 from habithub.models import Reminder
-
+from habithub.auth import require_api_key
 
 def _check_reminder_ownership(user, habit, reminder=None):
     if habit.user_id != user.id:
@@ -17,10 +17,11 @@ def _check_reminder_ownership(user, habit, reminder=None):
 
 class ReminderItem(Resource):
     """Resource for managing a single reminder."""
+    @require_api_key
     def get(self, user, habit, reminder):
         _check_reminder_ownership(user, habit, reminder)
         return reminder.serialize()
-
+    @require_api_key
     def put(self, user, habit, reminder):
         _check_reminder_ownership(user, habit, reminder)
         if not request.json:
@@ -38,7 +39,7 @@ class ReminderItem(Resource):
             raise Conflict(description="Reminder could not be updated")
 
         return Response(status=204)
-
+    @require_api_key
     def delete(self, user, habit, reminder):
         _check_reminder_ownership(user, habit, reminder)
         db.session.delete(reminder)
@@ -48,11 +49,12 @@ class ReminderItem(Resource):
 
 class ReminderCollection(Resource):
     """Resource for managing the collection of reminders for a habit."""
+    @require_api_key
     def get(self, user, habit):
         _check_reminder_ownership(user, habit)
         reminders = Reminder.query.filter_by(habit_id=habit.id).all()
         return [r.serialize() for r in reminders]
-
+    @require_api_key
     def post(self, user, habit):
         _check_reminder_ownership(user, habit)
         if not request.json:
