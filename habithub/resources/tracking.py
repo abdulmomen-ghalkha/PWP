@@ -6,7 +6,7 @@ from werkzeug.exceptions import BadRequest, Conflict, NotFound, UnsupportedMedia
 
 from habithub import db
 from habithub.models import Tracking
-
+from habithub.auth import require_api_key
 
 def _check_tracking_ownership(user, habit, tracking=None):
     if habit.user_id != user.id:
@@ -17,10 +17,11 @@ def _check_tracking_ownership(user, habit, tracking=None):
 
 class TrackingItem(Resource):
     """Resource for managing a single tracking log."""
+    @require_api_key
     def get(self, user, habit, tracking):
         _check_tracking_ownership(user, habit, tracking)
         return tracking.serialize()
-
+    @require_api_key
     def put(self, user, habit, tracking):
         _check_tracking_ownership(user, habit, tracking)
         if not request.json:
@@ -38,7 +39,7 @@ class TrackingItem(Resource):
             raise Conflict(description="Tracking log could not be updated")
 
         return Response(status=204)
-
+    @require_api_key
     def delete(self, user, habit, tracking):
         _check_tracking_ownership(user, habit, tracking)
         db.session.delete(tracking)
@@ -48,11 +49,12 @@ class TrackingItem(Resource):
 
 class TrackingCollection(Resource):
     """Resource for managing the collection of tracking logs for a habit."""
+    @require_api_key
     def get(self, user, habit):
         _check_tracking_ownership(user, habit)
         logs = Tracking.query.filter_by(habit_id=habit.id).all()
         return [l.serialize() for l in logs]
-
+    @require_api_key
     def post(self, user, habit):
         _check_tracking_ownership(user, habit)
         if not request.json:
