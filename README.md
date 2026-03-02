@@ -11,7 +11,7 @@
 All the dependencies are included in the "requirements.txt" file. A simple working environment for this task is
 ```bash
 python3 -m venv <venv_name>
-source <venv_name>/bin/activate
+Windows: .\venv\Scripts\activate or Linux/MacOS: source <venv_name>/bin/activate 
 pip install -r requirements.txt
 ```
 ### Create tables 
@@ -23,6 +23,13 @@ pip install -r requirements.txt
 
 ### Verify data
 `flask --app habithub check` or `python scripts/check_db.py`
+
+### Run the API
+`flask --app habithub run`
+
+### Test the API
+`pytest tests/`
+
 
 __Remember to include all required documentation and HOWTOs, including how to create and populate the database, how to run and test the API, the url to the entrypoint, instructions on how to setup and run the client, instructions on how to setup and run the axiliary service and instructions on how to deploy the api in a production environment__
 
