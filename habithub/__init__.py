@@ -1,3 +1,8 @@
+"""
+Init file for habithut package. This file contains the function
+that creates an application
+"""
+
 import os
 from flask import Flask
 from flask_caching import Cache
@@ -9,7 +14,12 @@ db = SQLAlchemy()
 cache = Cache()
 
 def create_app():
-
+    """
+    Create an application and return it based on configuration. It also
+    adds command line to the application that can be used from the terminal.
+    The package uses converters for different resources and the mapping
+    section adds those converters.
+    """
     app = Flask(__name__, instance_relative_config=True)
     os.makedirs(app.instance_path, exist_ok=True)
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" \

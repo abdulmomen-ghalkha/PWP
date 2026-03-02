@@ -1,3 +1,5 @@
+"""Defines a key validation function"""
+
 from functools import wraps
 from flask import request
 from werkzeug.exceptions import Unauthorized

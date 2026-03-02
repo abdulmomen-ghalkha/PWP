@@ -1,0 +1,5 @@
+[tool.pylint."MESSAGES CONTROL"]
+disable = [
+    "no-member",
+    "import-outside-toplevel"
+]

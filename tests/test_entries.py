@@ -1,8 +1,10 @@
-import json
-import pytest
+"""
+Test file for resources
+"""
+
+from datetime import time
 from habithub import db as _db
 from habithub.models import User, Habit, Reminder, Tracking
-from datetime import datetime, time, timezone
 
 
 # Helper functions for creating test data and making requests
@@ -38,6 +40,7 @@ def _create_habit(client, user_id):
 
 
 class TestUserCollection:
+    """Tes functions for UserCollection"""
     RESOURCE_URL = "/api/users/"
 
     def test_get_empty(self, client):
@@ -80,7 +83,7 @@ class TestUserCollection:
 
 
 class TestUserItem:
-
+    """Tes functions for UserItem"""
     def test_get(self, client):
         """GET a user and verify the returned data."""
         _, user_id = _create_user(client)
@@ -127,7 +130,7 @@ class TestUserItem:
 
     def test_put_duplicate_email(self, client):
         """PUT with an email that already belongs to another user."""
-        _, user_id = _create_user(client)
+        _, _ = _create_user(client)
         client.post("/api/users/", json=_get_user_json(email="other@example.com"))
         other_user_id = User.query.filter_by(email="other@example.com").first().id
         resp = client.put(
@@ -138,6 +141,7 @@ class TestUserItem:
 
 
 class TestHabitCollection:
+    """Tes functions for HabitCollection"""
     def test_get_empty(self, client):
         """GET habits for a user that has no habits."""
         _, user_id = _create_user(client)
@@ -181,7 +185,7 @@ class TestHabitCollection:
 
 
 class TestHabitItem:
-
+    """Tes functions for HabitItem"""
     def test_get(self, client):
         """GET a habit and verify the returned data."""
         _, user_id = _create_user(client)
@@ -209,7 +213,9 @@ class TestHabitItem:
         """PUT update a habit with valid data."""
         _, user_id = _create_user(client)
         _, habit_id = _create_habit(client, user_id)
-        resp = client.put(f"/api/users/{user_id}/habits/{habit_id}/", json=_get_habit_json(name="Updated"))
+        resp = client.put(
+            f"/api/users/{user_id}/habits/{habit_id}/",
+            json=_get_habit_json(name="Updated"))
         assert resp.status_code == 204
         assert _db.session.get(Habit, habit_id).name == "Updated"
 
@@ -237,7 +243,7 @@ class TestHabitItem:
 
 
 class TestReminderCollection:
-
+    """Tes functions for ReminderCollection"""
     def _base_url(self, user_id, habit_id):
         return f"/api/users/{user_id}/habits/{habit_id}/reminders/"
 
@@ -281,7 +287,7 @@ class TestReminderCollection:
 
 
 class TestReminderItem:
-
+    """Tes functions for ReminderItem"""
     def _create_reminder(self, client, user_id, habit_id):
         client.post(f"/api/users/{user_id}/habits/{habit_id}/reminders/", json=_get_reminder_json())
         return Reminder.query.first().id
@@ -319,7 +325,9 @@ class TestReminderItem:
         _, user_id = _create_user(client)
         _, habit_id = _create_habit(client, user_id)
         reminder_id = self._create_reminder(client, user_id, habit_id)
-        resp = client.put(f"/api/users/{user_id}/habits/{habit_id}/reminders/{reminder_id}/", data="not json")
+        resp = client.put(
+            f"/api/users/{user_id}/habits/{habit_id}/reminders/{reminder_id}/",
+            data="not json")
         assert resp.status_code == 415
 
     def test_delete(self, client):
@@ -427,7 +435,9 @@ class TestTrackingItem:
         _, user_id = _create_user(client)
         _, habit_id = _create_habit(client, user_id)
         tracking_id = self._create_tracking(client, user_id, habit_id)
-        resp = client.put(f"/api/users/{user_id}/habits/{habit_id}/tracking/{tracking_id}/", data="not json")
+        resp = client.put(
+            f"/api/users/{user_id}/habits/{habit_id}/tracking/{tracking_id}/",
+            data="not json")
         assert resp.status_code == 415
 
     def test_delete(self, client):

@@ -1,4 +1,4 @@
-import pytest 
+import pytest
 from jsonschema import validate, ValidationError
 from habithub.models import User, Habit, Reminder, Tracking
 
@@ -24,7 +24,7 @@ def _valid_reminder():
 def _valid_tracking():
     return {
         "log_time": "2024-01-01T08:00:00"
-    }  
+    }
 
 class TestUserSchema:
 
@@ -33,7 +33,7 @@ class TestUserSchema:
             validate(_valid_user(), User.json_schema())
         except ValidationError:
             pytest.fail("Validation failed for valid user data")
-    
+
     def test_wrong_data_type(self):
         user_data = _valid_user()
         user_data["first_name"] = 123   # Should be a string
@@ -59,7 +59,7 @@ class TestHabitSchema:
             validate(_valid_habit(), Habit.json_schema())
         except ValidationError:
             pytest.fail("Validation failed for valid habit data")
-    
+
     def test_wrong_data_type(self):
         habit_data = _valid_habit()
         habit_data["active"] = "yes"   # Should be a boolean
@@ -85,7 +85,7 @@ class TestReminderSchema:
             validate(_valid_reminder(), Reminder.json_schema())
         except ValidationError:
             pytest.fail("Validation failed for valid reminder data")
-    
+
     def test_wrong_data_type(self):
         reminder_data = _valid_reminder()
         reminder_data["reminded_time"] = "8 AM"   # Should be in HH:MM:SS format
@@ -105,7 +105,7 @@ class TestTrackingSchema:
             validate(_valid_tracking(), Tracking.json_schema())
         except ValidationError:
             pytest.fail("Validation failed for valid tracking data")
-    
+
     def test_wrong_data_type(self):
         tracking_data = _valid_tracking()
         tracking_data["log_time"] = 9999   # Should be string

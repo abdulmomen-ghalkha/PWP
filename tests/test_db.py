@@ -1,12 +1,16 @@
-import pytest
 import tempfile
 import os
 from datetime import datetime, time, timedelta, UTC
+import pytest
 from habithub import db, create_app
 from habithub.models import User, Habit, Reminder, Tracking
 
 @pytest.fixture
 def db_handle():
+    """
+    Test file's fixture that creates a database and yields it
+    to the testing functions
+    """
     db_fd, db_fname = tempfile.mkstemp()
     config = {
         "SQLALCHEMY_DATABASE_URI": "sqlite:///" + db_fname,
@@ -14,7 +18,7 @@ def db_handle():
     }
 
     app = create_app()
-    
+
     ctx = app.app_context()
     ctx.push()
 
@@ -35,11 +39,11 @@ def _get_user(first_name, last_name, email):
 def _get_habit(name, user):
     return Habit(name=name, user=user)
 
-def _get_reminder(time, habit):
-    return Reminder(reminded_time=time, habit=habit)
+def _get_reminder(reminded_time, habit):
+    return Reminder(reminded_time=reminded_time, habit=habit)
 
-def _get_tracking(time, habit):
-    return Tracking(log_time=time, habit=habit)
+def _get_tracking(log_time, habit):
+    return Tracking(log_time=log_time, habit=habit)
 
 def test_create_user(db_handle):
     """
@@ -125,7 +129,7 @@ def test_create_instances(db_handle):
     db.session.add_all([aleem, abdul, atte, hatem])
     db.session.commit()
 
-    # a small set of habits 
+    # a small set of habits
     habit_list = ["Gym", "Swimming", "Running", "Study", "Drink Water"]
 
     # create habits for each user
@@ -146,30 +150,30 @@ def test_create_instances(db_handle):
     hatem_run = Habit.query.filter_by(user_id=hatem.id, name="Running").first()
 
     # reminders
-    db.session.add(_get_reminder(habit=aleem_gym, time=time(19, 0)))
-    db.session.add(_get_reminder(habit=aleem_study, time=time(9, 0)))
-    db.session.add(_get_reminder(habit=abdul_swim, time=time(18, 30)))
-    db.session.add(_get_reminder(habit=atte_water, time=time(12, 0)))
-    db.session.add(_get_reminder(habit=hatem_run, time=time(7, 30)))
+    db.session.add(_get_reminder(habit=aleem_gym, reminded_time=time(19, 0)))
+    db.session.add(_get_reminder(habit=aleem_study, reminded_time=time(9, 0)))
+    db.session.add(_get_reminder(habit=abdul_swim, reminded_time=time(18, 30)))
+    db.session.add(_get_reminder(habit=atte_water, reminded_time=time(12, 0)))
+    db.session.add(_get_reminder(habit=hatem_run, reminded_time=time(7, 30)))
     db.session.commit()
 
     # tracking logs:
     # Aleem gym: 5-day streak
     for i in range(5):
-        db.session.add(_get_tracking(habit=aleem_gym, time=now - timedelta(days=i)))
+        db.session.add(_get_tracking(habit=aleem_gym, log_time=now - timedelta(days=i)))
 
     # Abdul swimming: missed one day (so it's not a perfect streak)
-    db.session.add(_get_tracking(habit=abdul_swim, time=now))
-    db.session.add(_get_tracking(habit=abdul_swim, time=now - timedelta(days=1)))
-    db.session.add(_get_tracking(habit=abdul_swim, time=now - timedelta(days=3)))
+    db.session.add(_get_tracking(habit=abdul_swim, log_time=now))
+    db.session.add(_get_tracking(habit=abdul_swim, log_time=now - timedelta(days=1)))
+    db.session.add(_get_tracking(habit=abdul_swim, log_time=now - timedelta(days=3)))
 
     # Atte: small streak for water (3 days)
     for i in range(3):
-        db.session.add(_get_tracking(habit=atte_water, time=now - timedelta(days=i)))
+        db.session.add(_get_tracking(habit=atte_water, log_time=now - timedelta(days=i)))
 
     # Hatem: only 2 logs
-    db.session.add(_get_tracking(habit=hatem_run, time=now))
-    db.session.add(_get_tracking(habit=hatem_run, time=now - timedelta(days=2)))
+    db.session.add(_get_tracking(habit=hatem_run, log_time=now))
+    db.session.add(_get_tracking(habit=hatem_run, log_time=now - timedelta(days=2)))
 
     db.session.commit()
 

@@ -1,9 +1,12 @@
-import click
-from flask.cli import with_appcontext
-from habithub import db
+"""This file holds the models that represents database tables"""
+
 import json
 import os
 from datetime import datetime, time as dtime, UTC
+import click
+from flask.cli import with_appcontext
+from habithub import db
+
 def _load_schema(filename: str) -> dict:
     """Load JSON schema from habithub/static/schema/."""
     base_dir = os.path.dirname(__file__)  # habithub/
@@ -11,6 +14,7 @@ def _load_schema(filename: str) -> dict:
     with open(schema_path, "r", encoding="utf-8") as f:
         return json.load(f)
 class User(db.Model):
+    """User model to represent the user table"""
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(64), nullable=False)
     last_name = db.Column(db.String(64), nullable=False)
@@ -20,9 +24,11 @@ class User(db.Model):
 
     @staticmethod
     def json_schema():
+        """Returns the schema needed for validation """
         return _load_schema("user.json")
 
     def serialize(self):
+        """Serialize this class into a json object"""
         return {
             "id": self.id,
             "first_name": self.first_name,
@@ -35,6 +41,7 @@ class User(db.Model):
         }
 
     def deserialize(self, data):
+        """Creates an object from json"""
         # simple mapping
         self.first_name = data["first_name"]
         self.last_name = data["last_name"]
@@ -42,6 +49,7 @@ class User(db.Model):
         return self
 
 class Habit(db.Model):
+    """Habit model to represent the habit table"""
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"),nullable=False)
     name = db.Column(db.String(64), nullable=False)
@@ -58,9 +66,11 @@ class Habit(db.Model):
     tracking_logs = db.relationship("Tracking", back_populates="habit")
     @staticmethod
     def json_schema():
+        """Returns the schema needed for validation """
         return _load_schema("habit.json")
 
     def serialize(self):
+        """Serialize this class into a json object"""
         return {
             "id": self.id,
             "user_id": self.user_id,
@@ -76,6 +86,7 @@ class Habit(db.Model):
         }
 
     def deserialize(self, data):
+        """Creates an object from json"""
         self.name = data["name"]
         # allow optional "active"
         if "active" in data:
@@ -83,6 +94,7 @@ class Habit(db.Model):
         return self
 
 class Reminder(db.Model):
+    """Reminder model to represent the reminder table"""
     id = db.Column(db.Integer, primary_key=True)
     habit_id = db.Column(db.Integer, db.ForeignKey("habit.id", ondelete="CASCADE"), nullable=False)
     reminded_time = db.Column(db.Time, nullable=False)
@@ -92,9 +104,11 @@ class Reminder(db.Model):
 
     @staticmethod
     def json_schema():
+        """Returns the schema needed for validation """
         return _load_schema("reminder.json")
 
     def serialize(self):
+        """Serialize this class into a json object"""
         return {
             "id": self.id,
             "habit_id": self.habit_id,
@@ -108,6 +122,7 @@ class Reminder(db.Model):
         }
 
     def deserialize(self, data):
+        """Creates an object from json"""
         try:
             hh, mm = data["reminded_time"].split(":")
             self.reminded_time = dtime(int(hh), int(mm))
@@ -118,6 +133,7 @@ class Reminder(db.Model):
         return self
 
 class Tracking(db.Model):
+    """Tracking model to represent the tracking table"""
     id = db.Column(db.Integer, primary_key=True)
     habit_id = db.Column(db.Integer, db.ForeignKey("habit.id", ondelete="CASCADE"), nullable=False)
     log_time = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(UTC))
@@ -126,9 +142,11 @@ class Tracking(db.Model):
 
     @staticmethod
     def json_schema():
+        """Returns the schema needed for validation """
         return _load_schema("tracking.json")
 
     def serialize(self):
+        """Serialize this class into a json object"""
         return {
             "id": self.id,
             "habit_id": self.habit_id,
@@ -141,6 +159,7 @@ class Tracking(db.Model):
         }
 
     def deserialize(self, data):
+        """Creates an object from json"""
         value = data["log_time"]
         if value.endswith("Z"):
             value = value[:-1] + "+00:00"
@@ -149,21 +168,24 @@ class Tracking(db.Model):
         except Exception as exc:
             raise ValueError("log_time must be ISO date-time (e.g. 2026-03-01T12:30:00Z)") from exc
         return self
-    
+
 @click.command("init-db")
 @with_appcontext
 def init_db_command():
+    """function needed to run init-db command from cli"""
     db.create_all()
     print("Database create successfully")
 
 @click.command("seed")
 @with_appcontext
 def seed_db_command():
+    """function needed to run seed command from cli"""
     from scripts.seed_db import seed
     seed()
 
 @click.command("check")
 @with_appcontext
 def check_db_command():
+    """function needed to run check command from cli"""
     from scripts.check_db import check
     check()
