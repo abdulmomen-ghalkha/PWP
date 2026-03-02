@@ -22,7 +22,7 @@ flask --app habithub init-db
 
 ### Populate the database
 ```bash
-```bash flask --app habithub seed or python scripts/seed_db.py
+flask --app habithub seed or python scripts/seed_db.py
 ```
 
 ### Verify data
