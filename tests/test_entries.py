@@ -40,7 +40,7 @@ def _create_habit(client, user_id):
 
 
 class TestUserCollection:
-    """Tes functions for UserCollection"""
+    """Test functions for UserCollection"""
     RESOURCE_URL = "/api/users/"
 
     def test_get_empty(self, client):

@@ -1,3 +1,5 @@
+"""Defines resources needed to access reminder data """
+
 from flask import Response, request, url_for
 from flask_restful import Resource
 from jsonschema import ValidationError, validate
@@ -10,11 +12,11 @@ from habithub.auth import require_api_key
 
 
 def _check_reminder_owner(user, habit, reminder=None):
+    """Helper function to check a reminder owner"""
     if habit.user_id != user.id:
         raise NotFound
     if reminder is not None and reminder.habit_id != habit.id:
         raise NotFound
-
 
 class ReminderItem(Resource):
     """Resource for managing a single reminder."""
@@ -22,31 +24,34 @@ class ReminderItem(Resource):
     @require_api_key
     @cache.cached()
     def get(self, user, habit, reminder):
+        """GET request"""
         _check_reminder_owner(user, habit, reminder)
         return reminder.serialize()
 
     @require_api_key
     def put(self, user, habit, reminder):
+        """PUT request"""
         _check_reminder_owner(user, habit, reminder)
         if not request.json:
             raise UnsupportedMediaType
         try:
             validate(request.json, Reminder.json_schema())
         except ValidationError as e:
-            raise BadRequest(description=str(e))
+            raise BadRequest(description=str(e)) from e
 
         reminder.deserialize(request.json)
         try:
             db.session.commit()
-        except IntegrityError:
+        except IntegrityError as e:
             db.session.rollback()
-            raise Conflict(description="Reminder could not be updated")
+            raise Conflict(description="Reminder could not be updated") from e
 
         self._clear_cache(user, habit)
         return Response(status=204)
 
     @require_api_key
     def delete(self, user, habit, reminder):
+        """DELETE request"""
         _check_reminder_owner(user, habit, reminder)
         self._clear_cache(user, habit)
         db.session.delete(reminder)
@@ -67,19 +72,21 @@ class ReminderCollection(Resource):
     @require_api_key
     @cache.cached()
     def get(self, user, habit):
+        """GET request"""
         _check_reminder_owner(user, habit)
         reminders = Reminder.query.filter_by(habit_id=habit.id).all()
         return [r.serialize() for r in reminders]
 
     @require_api_key
     def post(self, user, habit):
+        """POST request"""
         _check_reminder_owner(user, habit)
         if not request.json:
             raise UnsupportedMediaType
         try:
             validate(request.json, Reminder.json_schema())
         except ValidationError as e:
-            raise BadRequest(description=str(e))
+            raise BadRequest(description=str(e)) from e
 
         reminder = Reminder(habit_id=habit.id)
         reminder.deserialize(request.json)
@@ -87,9 +94,9 @@ class ReminderCollection(Resource):
         try:
             db.session.add(reminder)
             db.session.commit()
-        except IntegrityError:
+        except IntegrityError as e:
             db.session.rollback()
-            raise Conflict(description="Reminder could not be created")
+            raise Conflict(description="Reminder could not be created") from e
 
         location = url_for(
             "api.reminderitem",
@@ -100,4 +107,3 @@ class ReminderCollection(Resource):
 
         cache.delete("view/" + url_for("api.remindercollection", user=user, habit=habit))
         return Response(status=201, headers={"Location": location})
-

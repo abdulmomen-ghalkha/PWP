@@ -3,3 +3,5 @@ disable = [
     "no-member",
     "import-outside-toplevel"
 ]
+[tool.pylint.main]
+init-hook = "import sys, os; sys.path.append(os.getcwd())"

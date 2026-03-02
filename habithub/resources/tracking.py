@@ -10,6 +10,7 @@ from habithub.auth import require_api_key
 
 
 def _check_tracking_owner(user, habit, tracking=None):
+    """Helper function to check the logged tracking owner"""
     if habit.user_id != user.id:
         raise NotFound
     if tracking is not None and tracking.habit_id != habit.id:
@@ -22,31 +23,34 @@ class TrackingItem(Resource):
     @require_api_key
     @cache.cached()
     def get(self, user, habit, tracking):
+        """GET request"""
         _check_tracking_owner(user, habit, tracking)
         return tracking.serialize()
 
     @require_api_key
     def put(self, user, habit, tracking):
+        """PUT request"""
         _check_tracking_owner(user, habit, tracking)
         if not request.json:
             raise UnsupportedMediaType
         try:
             validate(request.json, Tracking.json_schema())
         except ValidationError as e:
-            raise BadRequest(description=str(e))
+            raise BadRequest(description=str(e)) from e
 
         tracking.deserialize(request.json)
         try:
             db.session.commit()
-        except IntegrityError:
+        except IntegrityError as e:
             db.session.rollback()
-            raise Conflict(description="Tracking log could not be updated")
+            raise Conflict(description="Tracking log could not be updated") from e
 
         self._clear_cache(user, habit)
         return Response(status=204)
 
     @require_api_key
     def delete(self, user, habit, tracking):
+        """DELETE request"""
         _check_tracking_owner(user, habit, tracking)
         self._clear_cache(user, habit)
         db.session.delete(tracking)
@@ -67,28 +71,30 @@ class TrackingCollection(Resource):
     @require_api_key
     @cache.cached()
     def get(self, user, habit):
+        """GET request"""
         _check_tracking_owner(user, habit)
         logs = Tracking.query.filter_by(habit_id=habit.id).all()
         return [l.serialize() for l in logs]
 
     @require_api_key
     def post(self, user, habit):
+        """POST request"""
         _check_tracking_owner(user, habit)
         if not request.json:
             raise UnsupportedMediaType
         try:
             validate(request.json, Tracking.json_schema())
         except ValidationError as e:
-            raise BadRequest(description=str(e))
+            raise BadRequest(description=str(e)) from e
 
         log = Tracking(habit_id=habit.id)
         log.deserialize(request.json)
         try:
             db.session.add(log)
             db.session.commit()
-        except IntegrityError:
+        except IntegrityError as e:
             db.session.rollback()
-            raise Conflict(description="Tracking log could not be created")
+            raise Conflict(description="Tracking log could not be created") from e
 
         location = url_for(
             "api.trackingitem",
